@@ -22,7 +22,6 @@ Nhóm thực hiện:
 8. [AST](#8-ast)
 9. [Kiểm thử](#9-kiểm-thử)
 10. [Cấu trúc thư mục](#10-cấu-trúc-thư-mục)
-11. [Hạn chế đã biết](#11-hạn-chế-đã-biết)
 
 ---
 
@@ -34,7 +33,17 @@ Nhóm thực hiện:
   dựng AST, **báo được nhiều lỗi trong một lần chạy** nhờ phục hồi lỗi.
 - **AST**: định nghĩa node, hàm tạo, in cây và giải phóng bộ nhớ.
 - **Báo lỗi tập trung**: mọi lỗi đều đi qua một chỗ, định dạng thống nhất
-  `file:dòng:cột: loại lỗi: mô tả`.
+  `file:dòng:cột: loại lỗi: mô tả`, trong đó:
+  - `file`: đường dẫn file UPL đang phân tích.
+  - `dòng`: số thứ tự dòng chứa lỗi trong file, **đếm từ 1**.
+  - `cột`: vị trí ký tự đầu tiên của token gây lỗi trên dòng đó, **đếm từ 1**
+    (mỗi ký tự, kể cả dấu cách và tab, tính là 1 cột).
+  - `loại lỗi`: `lexical error` (lỗi từ vựng, do lexer) hoặc `syntax error`
+    (lỗi cú pháp, do parser).
+  - `mô tả`: nội dung lỗi, ví dụ `unexpected character '@'`.
+
+  Ví dụ `prog.upl:4:9: lexical error: unexpected character '@'` nghĩa là lỗi ở
+  dòng 4, cột 9 của file `prog.upl`.
 
 ## 2. Yêu cầu cài đặt
 
@@ -52,7 +61,7 @@ sudo apt install gcc make flex bison
 ```bash
 make                              # build -> build/upl
 make test                         # chạy bộ kiểm thử tự động
-make examples                     # chạy các ví dụ, ghi kết quả vào examples/output/
+make examples                     # chạy các ví dụ, ghi kết quả (lexer+parser) vào examples/output/.txt
 make clean                        # xóa thư mục build
 ```
 
@@ -81,6 +90,24 @@ lexeme (đoạn chữ gốc). Cuối cùng in `Lexing OK.` hoặc `Found N error
 | `0` | Không có lỗi                                           |
 | `1` | Có lỗi (từ vựng hoặc cú pháp)                          |
 | `2` | Sai cách dùng (thiếu tên file) hoặc không mở được file |
+
+**Xem mã thoát:** mã thoát không tự hiện ra màn hình. Trong bash (Ubuntu/WSL), gõ
+`echo $?` **ngay sau** lệnh chạy để xem mã của lệnh vừa chạy:
+
+```bash
+build/upl tests/valid/01_de_bai.upl
+echo $?        # in 0: chương trình đúng
+
+build/upl examples/04_identifier_errors.upl
+echo $?        # in 1: có lỗi
+
+build/upl
+echo $?        # in 2: thiếu tên file
+```
+
+Lưu ý: `echo $?` chỉ cho mã của lệnh liền trước, nên chạy thêm bất kỳ lệnh nào xen
+giữa thì mã bị ghi đè. Các script kiểm thử (`tests/run_tests.sh`) cũng dựa vào mã
+thoát này để phân biệt chương trình đúng và chương trình có lỗi.
 
 ## 4. Ngôn ngữ UPL
 
@@ -261,13 +288,3 @@ Thư mục `examples/` chứa các chương trình UPL minh họa (đúng, lỗi
 | `tests/`           | `lexical_ok/`, `lexical_errors/`, `valid/`, `syntax_errors/`, `run_tests.sh`           |
 | `examples/`        | Chương trình UPL minh họa và `output/` (kết quả chạy)                                  |
 | `build/`           | File sinh ra khi build (không đưa vào git)                                             |
-
-## 11. Hạn chế đã biết
-
-- Sau một lỗi cú pháp có thể phát sinh thêm lỗi dây chuyền (ví dụ comment không
-  đóng làm parser báo thêm lỗi thiếu `end` ở cuối file).
-- Thông báo lỗi cho định danh sai dạng là thông báo cú pháp chung của Bison
-  (`unexpected T_ID, expecting ...`), chưa có câu giải thích riêng.
-- Khi có lỗi cú pháp, một số node AST dở dang không được giải phóng (chương trình
-  thoát ngay sau đó nên không ảnh hưởng kết quả).
-- Chưa có kiểm tra ngữ nghĩa (khai báo trước khi dùng, kiểu dữ liệu).
