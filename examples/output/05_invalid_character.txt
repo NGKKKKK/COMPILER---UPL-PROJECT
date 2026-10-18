@@ -1,0 +1,2 @@
+examples/05_invalid_character.upl:2:5: lexical error: unexpected character '@'
+Found 1 error(s).

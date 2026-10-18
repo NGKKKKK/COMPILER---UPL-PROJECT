@@ -1,0 +1,4 @@
+examples/04_identifier_errors.upl:2:7: syntax error: unexpected T_NUM, expecting T_ID
+examples/04_identifier_errors.upl:3:9: syntax error: unexpected T_ID, expecting ';'
+examples/04_identifier_errors.upl:5:11: syntax error: unexpected T_ID, expecting ';'
+Found 3 error(s).

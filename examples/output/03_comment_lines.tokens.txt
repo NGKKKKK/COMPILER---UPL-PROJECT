@@ -1,0 +1,7 @@
+LINE:COL TOKEN      LEXEME
+1:1     T_BEGIN    'begin'
+5:3     T_INT      'int'
+5:7     T_ID       'x'
+5:8     ';'        ';'
+6:1     T_END      'end'
+Lexing OK.

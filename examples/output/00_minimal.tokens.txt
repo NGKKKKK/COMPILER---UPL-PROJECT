@@ -1,0 +1,4 @@
+LINE:COL TOKEN      LEXEME
+1:1     T_BEGIN    'begin'
+2:1     T_END      'end'
+Lexing OK.

@@ -1,0 +1,19 @@
+examples/02_lexical_errors.upl:2:7: lexical error: unexpected character '_'
+examples/02_lexical_errors.upl:3:9: lexical error: unexpected character '<'
+examples/02_lexical_errors.upl:4:9: lexical error: unexpected character '@'
+examples/02_lexical_errors.upl:5:3: lexical error: unterminated comment
+LINE:COL TOKEN      LEXEME
+1:1     T_BEGIN    'begin'
+2:3     T_INT      'int'
+2:8     T_ID       'x'
+2:9     ';'        ';'
+3:3     T_ID       'x'
+3:5     '='        '='
+3:7     T_NUM      '3'
+3:11    T_NUM      '4'
+3:12    ';'        ';'
+4:3     T_ID       'y'
+4:5     '='        '='
+4:7     T_NUM      '1'
+4:10    ';'        ';'
+Found 4 error(s).

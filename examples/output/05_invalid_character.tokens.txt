@@ -1,0 +1,5 @@
+examples/05_invalid_character.upl:2:5: lexical error: unexpected character '@'
+LINE:COL TOKEN      LEXEME
+1:1     T_BEGIN    'begin'
+3:1     T_END      'end'
+Found 1 error(s).

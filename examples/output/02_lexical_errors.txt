@@ -1,0 +1,7 @@
+examples/02_lexical_errors.upl:2:7: lexical error: unexpected character '_'
+examples/02_lexical_errors.upl:3:9: lexical error: unexpected character '<'
+examples/02_lexical_errors.upl:3:11: syntax error: unexpected T_NUM, expecting ';'
+examples/02_lexical_errors.upl:4:9: lexical error: unexpected character '@'
+examples/02_lexical_errors.upl:5:3: lexical error: unterminated comment
+examples/02_lexical_errors.upl:7:5: syntax error: unexpected end of file
+Found 6 error(s).

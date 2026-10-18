@@ -1,0 +1,65 @@
+Program @1:1
+  Decl int x @2:5
+  Decl int y @3:5
+    BinOp(+) @3:12
+      Id x @3:11
+      IntLit 1 @3:13
+  Decl bool a @8:5
+  If @10:5
+    cond:
+      BinOp(>) @10:10
+        Id x @10:9
+        Id a @10:11
+    then:
+      Block @10:18
+        Decl int c @11:9
+          IntLit 1 @11:15
+    else:
+      Block @12:12
+        Assign y @13:9
+          Id x @13:11
+        Assign x @14:9
+          BinOp(+) @14:12
+            Id x @14:11
+            IntLit 1 @14:13
+  Print @17:5
+    Id a @17:11
+  If @19:5
+    cond:
+      BinOp(>=) @19:10
+        Id x @19:9
+        Id a @19:12
+    then:
+      Block @19:20
+        Assign x @20:9
+          BinOp(+) @20:12
+            Id x @20:11
+            IntLit 1 @20:13
+  Decl bool x @23:5
+    BinOp(==) @23:13
+      Id a @23:12
+      Id b @23:15
+  DoWhile @25:5
+    body:
+      Block @25:7
+        Decl int b @26:9
+          IntLit 1 @26:15
+        Assign b @27:9
+          BinOp(*) @27:12
+            Id b @27:11
+            IntLit 10 @27:13
+        Assign a @28:9
+          BinOp(*) @28:17
+            BinOp(+) @28:13
+              Id b @28:12
+              IntLit 10 @28:14
+            Id b @28:18
+    cond:
+      BinOp(>) @29:14
+        Id a @29:13
+        IntLit 1 @29:15
+  Print @31:5
+    BinOp(+) @31:12
+      Id a @31:11
+      IntLit 1 @31:13
+OK: no errors.
