@@ -1,0 +1,7 @@
+// comment mot dong o dau file
+begin
+  /* comment
+     nhieu dong */
+  int x; // comment cuoi dong
+  /* a * b / c ** // /* long nhau khong co tac dung */
+end

@@ -1,0 +1,6 @@
+begin
+  int _x;
+  x = 3 < 4;
+  y = 1 @;
+  /* comment khong dong
+end

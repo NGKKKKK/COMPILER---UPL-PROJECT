@@ -1,0 +1,7 @@
+// EXPECT: 2
+// 2147483647 la INT_MAX nen hop le; hai hang so sau vuot qua mien int.
+begin
+  int a = 2147483647;
+  int b = 2147483648;
+  int c = 99999999999999999999;
+end

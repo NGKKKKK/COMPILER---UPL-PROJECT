@@ -1,0 +1,6 @@
+// EXPECT: 1
+// a1b -> T_ID(a1) T_ID(b): hai id lien nhau khong hop le trong van pham.
+begin
+  int a1b = 5;
+  print(1);
+end

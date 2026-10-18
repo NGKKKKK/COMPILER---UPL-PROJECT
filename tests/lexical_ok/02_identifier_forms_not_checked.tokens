@@ -1,0 +1,16 @@
+T_BEGIN
+T_INT
+T_NUM
+T_ID
+';'
+T_INT
+T_ID
+T_ID
+';'
+T_ID
+T_ID
+'='
+T_NUM
+T_ID
+';'
+T_END

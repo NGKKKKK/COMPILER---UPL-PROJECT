@@ -1,0 +1,7 @@
+begin
+  int 1abc;        // T_NUM T_ID
+  int a1b = 5;     // T_ID T_ID
+  int ok = 1;
+  ok = ab1cc + 1;  // T_ID T_ID
+  print(ok);
+end

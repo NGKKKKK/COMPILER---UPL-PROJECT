@@ -1,0 +1,7 @@
+// EXPECT: 1
+// ab1cc -> T_ID(ab1) T_ID(cc)
+begin
+  int x;
+  x = ab1cc + 1;
+  print(x);
+end

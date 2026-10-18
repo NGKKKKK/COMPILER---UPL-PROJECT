@@ -1,0 +1,5 @@
+// EXPECT: 1
+begin
+  int x;
+  /* comment khong dong
+end

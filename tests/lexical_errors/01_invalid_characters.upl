@@ -1,0 +1,8 @@
+// EXPECT: 4
+// Lexer chi bao loi khi gap KY TU khong thuoc bang chu cai cua UPL.
+begin
+  int _x;
+  x = 1 @;
+  y = a < b;
+  z = #;
+end

@@ -1,0 +1,6 @@
+// EXPECT: 1
+// 1abc -> T_NUM T_ID: parser bao loi, khong phai lexer.
+begin
+  int 1abc;
+  print(1);
+end

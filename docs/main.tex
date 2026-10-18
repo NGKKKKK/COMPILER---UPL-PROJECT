@@ -1,0 +1,394 @@
+% !TEX program = xelatex
+% ---------------------------------------------------------------------------
+% VĂN PHẠM PHI NGỮ CẢNH CỦA NGÔN NGỮ UPL
+% Biên dịch: XeLaTeX (Overleaf: Menu -> Compiler -> XeLaTeX; dòng magic comment
+% ở trên đã tự chọn XeLaTeX). Cần biên dịch 2 lần để mục lục/tham chiếu đúng.
+% ---------------------------------------------------------------------------
+\documentclass[11pt,a4paper]{article}
+
+% ---------- Phông chữ (hỗ trợ đầy đủ tiếng Việt) ----------
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Pagella}
+\setsansfont{TeX Gyre Heros}
+\setmonofont{Latin Modern Mono}[Scale=MatchLowercase]
+
+% ---------- Trang giấy, tiêu đề ----------
+\usepackage[a4paper,margin=2.5cm,headheight=22pt]{geometry}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+% ---------- Bảng, công thức, mã ----------
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage[edges]{forest}
+
+% ---------- Màu và kiểu chữ ----------
+\definecolor{uplblue}{HTML}{1F3A5F}
+\definecolor{uplgray}{HTML}{F3F5F8}
+\definecolor{uplrule}{HTML}{C9D1DC}
+\definecolor{upltok}{HTML}{8A2D1F}
+
+\titleformat{\section}
+  {\sffamily\Large\bfseries\color{uplblue}}
+  {\thesection.}{0.6em}{}[\vspace{-0.4em}{\color{uplrule}\titlerule}]
+\titlespacing*{\section}{0pt}{2.0ex plus 0.5ex}{1.2ex}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{uplrule}\leaders\hrule height \headrulewidth\hfill}}
+\lhead{\small\sffamily\color{uplblue} Văn phạm phi ngữ cảnh của ngôn ngữ UPL}
+\rhead{\small\sffamily\color{uplblue} BTL01}
+\cfoot{\small\thepage}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\renewcommand{\arraystretch}{1.25}
+\setlist[itemize]{itemsep=0.25em,topsep=0.3em}
+\setlist[enumerate]{itemsep=0.25em,topsep=0.3em}
+
+% ---------- Macro cho ký hiệu văn phạm ----------
+% \nt{X}: ký hiệu không kết thúc;  \tm{x}: ký hiệu kết thúc (token)
+\newcommand{\nt}[1]{\textit{#1}}
+\newcommand{\tm}[1]{\texttt{\textcolor{upltok}{#1}}}
+\newcommand{\eps}{\ensuremath{\varepsilon}}
+\newcommand{\ar}{\ensuremath{\rightarrow}}
+\newcommand{\alt}{\ensuremath{\mid}}
+\newcommand{\dv}{\ensuremath{\Rightarrow}}
+% \rn{k}: số hiệu luật sinh, ví dụ (12)
+\newcommand{\rn}[1]{(#1)}
+
+% ---------- Mã nguồn UPL ----------
+\lstdefinelanguage{UPL}{
+  morekeywords={begin,end,int,bool,if,then,else,do,while,for,print,true,false},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+}
+\lstset{
+  language=UPL,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{uplblue},
+  commentstyle=\itshape\color{gray},
+  backgroundcolor=\color{uplgray},
+  frame=single,
+  rulecolor=\color{uplrule},
+  framesep=6pt,
+  xleftmargin=0pt,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+}
+
+\begin{document}
+
+% ======================= Tiêu đề =======================
+\begin{flushleft}
+  {\sffamily\bfseries\fontsize{22}{27}\selectfont\color{uplblue}
+   VĂN PHẠM PHI NGỮ CẢNH CỦA\\[2pt] NGÔN NGỮ UPL\par}
+  \vspace{0.8em}
+  {\color{uplrule}\rule{\linewidth}{0.8pt}}\par
+  \vspace{0.2em}
+  \begin{tabular}{@{}l@{\hspace{0.6em}}l@{}}
+    24021485 & Lã Việt Hoàng \\
+    24021533 & Nguyễn Đức Khiêm \\
+  \end{tabular}
+\end{flushleft}
+
+% ======================= 1. Giới thiệu =======================
+\section{Giới thiệu}
+
+Tài liệu này đặc tả văn phạm phi ngữ cảnh (CFG) của ngôn ngữ lập trình UPL.
+Văn phạm là bộ bốn $G = (N, T, P, S)$, trong đó $N$ là tập ký hiệu không kết
+thúc, $T$ là tập ký hiệu kết thúc (token), $P$ là tập luật sinh và
+$S = \nt{Program}$ là ký hiệu bắt đầu.
+
+% ======================= 2. Giả định thiết kế =======================
+\section{Các giả định thiết kế}
+
+Đề bài chưa quy định một số chi tiết, nên văn phạm này thống nhất như sau:
+
+\begin{enumerate}
+  \item Câu lệnh \tm{for} có dạng kiểu C:
+        \texttt{for (khởi\_tạo; điều\_kiện; cập\_nhật) \{ \dots{} \}}.
+        Phần khởi tạo là khai báo hoặc phép gán, phần cập nhật là phép gán.
+  \item Bổ sung hai hằng boolean \tm{true} và \tm{false}.
+  \item Thân của \tm{if}, \tm{else}, \tm{do-while}, \tm{for} bắt buộc nằm
+        trong cặp \texttt{\{ \}}.
+  \item Phép so sánh (\tm{>}, \tm{>=}, \tm{==}) không có tính kết hợp, nghĩa
+        là \texttt{a > b > c} không hợp lệ.
+  \item Văn phạm chỉ mô tả cú pháp. Các ràng buộc ngữ nghĩa (khai báo trước
+        khi dùng, khai báo lại, tương thích kiểu) không thuộc phạm vi tài
+        liệu này.
+\end{enumerate}
+
+% ======================= 3. Token =======================
+\section{Ký hiệu kết thúc (token)}
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}p{4.6cm} X@{}}
+\toprule
+\textbf{Nhóm} & \textbf{Token} & \textbf{Mô tả} \\
+\midrule
+Từ khóa & \tm{begin} \tm{end} \tm{int} \tm{bool} \tm{if} \tm{then} \tm{else}
+          \tm{do} \tm{while} \tm{for} \tm{print} \tm{true} \tm{false}
+        & Từ khóa dành riêng, không dùng làm định danh \\
+\addlinespace
+Định danh & \tm{id}
+          & Bắt đầu bằng chữ cái, nếu có chữ số thì chỉ nằm ở cuối:
+            \texttt{[A-Za-z]+[0-9]*} \\
+\addlinespace
+Hằng số nguyên & \tm{num}
+               & Dãy một hoặc nhiều chữ số: \texttt{[0-9]+} \\
+\addlinespace
+Toán tử số học & \tm{+} \tm{*} & Cộng, nhân \\
+\addlinespace
+Toán tử so sánh & \tm{>} \tm{>=} \tm{==}
+                & Lớn hơn, lớn hơn hoặc bằng, bằng \\
+\addlinespace
+Phép gán & \tm{=} & Gán giá trị \\
+\addlinespace
+Phân cách & \tm{(} \tm{)} \tm{\{} \tm{\}} \tm{;} & \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Khoảng trắng và comment kiểu Java (\texttt{//} \dots{} đến cuối dòng,
+\texttt{/*} \dots{} \texttt{*/} có thể nhiều dòng) được bộ phân tích từ vựng
+loại bỏ, không xuất hiện trong văn phạm.
+
+% ======================= 4. Không kết thúc =======================
+\section{Ký hiệu không kết thúc}
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\linewidth}{@{}>{\itshape}l X@{}}
+\toprule
+\textbf{Ký hiệu} & \textbf{Ý nghĩa} \\
+\midrule
+Program  & Toàn bộ chương trình (ký hiệu bắt đầu) \\
+StmtList & Danh sách câu lệnh (có thể rỗng) \\
+Stmt     & Một câu lệnh \\
+Block    & Khối lệnh trong \texttt{\{ \}} \\
+Decl     & Khai báo biến (có thể kèm khởi tạo) \\
+Type     & Kiểu dữ liệu \\
+Assign   & Câu lệnh gán \\
+Print    & Câu lệnh in \\
+IfStmt   & Câu lệnh rẽ nhánh \\
+DoWhile  & Câu lệnh lặp do-while \\
+ForStmt  & Câu lệnh lặp for \\
+ForInit  & Phần khởi tạo của for \\
+Expr     & Biểu thức (có thể có so sánh) \\
+RelOp    & Toán tử so sánh \\
+Arith    & Biểu thức cộng \\
+Term     & Biểu thức nhân \\
+Factor   & Toán hạng cơ bản \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ======================= 5. Luật sinh =======================
+\clearpage % giữ trọn 37 luật sinh trên cùng một trang
+\section{Các luật sinh}
+
+\begin{longtable}{@{}r@{\hspace{0.9em}}l@{\hspace{0.7em}}c@{\hspace{0.7em}}l@{}}
+% --- Chương trình và danh sách câu lệnh ---
+\rn{1}  & \nt{Program}  & \ar  & \tm{begin} \nt{StmtList} \tm{end} \\
+\addlinespace
+\rn{2}  & \nt{StmtList} & \ar  & \nt{StmtList} \nt{Stmt} \\
+\rn{3}  &               & \alt & \eps \\
+\addlinespace
+% --- Câu lệnh ---
+\rn{4}  & \nt{Stmt}     & \ar  & \nt{Decl} \tm{;} \\
+\rn{5}  &               & \alt & \nt{Assign} \tm{;} \\
+\rn{6}  &               & \alt & \nt{Print} \tm{;} \\
+\rn{7}  &               & \alt & \nt{IfStmt} \\
+\rn{8}  &               & \alt & \nt{DoWhile} \\
+\rn{9}  &               & \alt & \nt{ForStmt} \\
+\rn{10} &               & \alt & \nt{Block} \\
+\addlinespace
+\rn{11} & \nt{Block}    & \ar  & \tm{\{} \nt{StmtList} \tm{\}} \\
+\addlinespace
+% --- Khai báo, gán, in ---
+\rn{12} & \nt{Decl}     & \ar  & \nt{Type} \tm{id} \\
+\rn{13} &               & \alt & \nt{Type} \tm{id} \tm{=} \nt{Expr} \\
+\rn{14} & \nt{Type}     & \ar  & \tm{int} \\
+\rn{15} &               & \alt & \tm{bool} \\
+\rn{16} & \nt{Assign}   & \ar  & \tm{id} \tm{=} \nt{Expr} \\
+\rn{17} & \nt{Print}    & \ar  & \tm{print} \tm{(} \nt{Expr} \tm{)} \\
+\addlinespace
+% --- Rẽ nhánh và vòng lặp ---
+\rn{18} & \nt{IfStmt}   & \ar  & \tm{if} \tm{(} \nt{Expr} \tm{)} \tm{then} \nt{Block} \\
+\rn{19} &               & \alt & \tm{if} \tm{(} \nt{Expr} \tm{)} \tm{then} \nt{Block} \tm{else} \nt{Block} \\
+\rn{20} & \nt{DoWhile}  & \ar  & \tm{do} \nt{Block} \tm{while} \tm{(} \nt{Expr} \tm{)} \tm{;} \\
+\rn{21} & \nt{ForStmt}  & \ar  & \tm{for} \tm{(} \nt{ForInit} \tm{;} \nt{Expr} \tm{;} \nt{Assign} \tm{)} \nt{Block} \\
+\rn{22} & \nt{ForInit}  & \ar  & \nt{Decl} \\
+\rn{23} &               & \alt & \nt{Assign} \\
+\addlinespace
+% --- Biểu thức ---
+\rn{24} & \nt{Expr}     & \ar  & \nt{Arith} \\
+\rn{25} &               & \alt & \nt{Arith} \nt{RelOp} \nt{Arith} \\
+\rn{26} & \nt{RelOp}    & \ar  & \tm{>} \\
+\rn{27} &               & \alt & \tm{>=} \\
+\rn{28} &               & \alt & \tm{==} \\
+\addlinespace
+\rn{29} & \nt{Arith}    & \ar  & \nt{Arith} \tm{+} \nt{Term} \\
+\rn{30} &               & \alt & \nt{Term} \\
+\rn{31} & \nt{Term}     & \ar  & \nt{Term} \tm{*} \nt{Factor} \\
+\rn{32} &               & \alt & \nt{Factor} \\
+\addlinespace
+\rn{33} & \nt{Factor}   & \ar  & \tm{id} \\
+\rn{34} &               & \alt & \tm{num} \\
+\rn{35} &               & \alt & \tm{true} \\
+\rn{36} &               & \alt & \tm{false} \\
+\rn{37} &               & \alt & \tm{(} \nt{Expr} \tm{)} \\
+\end{longtable}
+
+% ======================= 6. Độ ưu tiên =======================
+\section{Độ ưu tiên và tính kết hợp}
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\linewidth}{@{}c c l X@{}}
+\toprule
+\textbf{Mức (cao đến thấp)} & \textbf{Toán tử} & \textbf{Kết hợp}
+  & \textbf{Được thể hiện bởi} \\
+\midrule
+1 & \tm{(\,)}        &              & \nt{Factor} \ar{} \tm{(} \nt{Expr} \tm{)} \\
+2 & \tm{*}           & Trái         & \nt{Term} \ar{} \nt{Term} \tm{*} \nt{Factor} \\
+3 & \tm{+}           & Trái         & \nt{Arith} \ar{} \nt{Arith} \tm{+} \nt{Term} \\
+4 & \tm{>} \tm{>=} \tm{==} & Không kết hợp
+  & \nt{Expr} \ar{} \nt{Arith} \nt{RelOp} \nt{Arith} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{itemize}
+  \item Toán tử nằm càng sâu trong chuỗi
+        $\nt{Expr} \to \nt{Arith} \to \nt{Term} \to \nt{Factor}$ thì ưu tiên
+        càng cao. Vì \tm{*} nằm sâu hơn \tm{+} nên \tm{*} ưu tiên hơn \tm{+}.
+  \item Đệ quy trái làm \tm{+} và \tm{*} kết hợp trái: \texttt{a+b+c} được
+        hiểu là \texttt{(a+b)+c}.
+  \item Luật \rn{25} chỉ chứa một \nt{RelOp} nên không thể sinh
+        \texttt{a>b>c}.
+  \item Dấu ngoặc ở \nt{Factor} cho phép đặt lại thứ tự tính toán.
+\end{itemize}
+
+% ======================= 7. Không nhập nhằng =======================
+\section{Tính không nhập nhằng}
+
+\begin{itemize}
+  \item \textbf{Dangling else:} thân của \tm{if} luôn là \nt{Block} (bắt đầu
+        bằng \texttt{\{} và kết thúc bằng \texttt{\}}), nên \tm{else} luôn
+        thuộc về \tm{if} gần nhất chưa có \tm{else} mà không cần quy tắc phụ.
+  \item \textbf{Biểu thức:} phân tầng \nt{Expr}/\nt{Arith}/\nt{Term}/\nt{Factor}
+        cho mỗi biểu thức đúng một cây phân tích.
+  \item \textbf{Câu lệnh:} mỗi dạng câu lệnh bắt đầu bằng một token khác nhau
+        (\tm{int}/\tm{bool}, \tm{id}, \tm{print}, \tm{if}, \tm{do}, \tm{for},
+        \texttt{\{}) nên không có hai luật cùng dẫn đến một chuỗi.
+\end{itemize}
+
+% ======================= 8. Ví dụ dẫn xuất =======================
+\section{Ví dụ dẫn xuất}
+
+\textbf{Ví dụ 1.} Chương trình rỗng \texttt{begin end}:
+\[
+  \nt{Program} \dv \tm{begin}\ \nt{StmtList}\ \tm{end}
+               \dv \tm{begin}\ \eps\ \tm{end}
+\]
+
+\textbf{Ví dụ 2.} Câu lệnh \texttt{int y = x + 1 ;} (dẫn xuất trái nhất):
+\begin{align*}
+  \nt{Stmt} &\dv \nt{Decl}\ \tm{;} \\
+            &\dv \nt{Type}\ \tm{id}\ \tm{=}\ \nt{Expr}\ \tm{;} \\
+            &\dv \tm{int}\ \tm{id}\ \tm{=}\ \nt{Expr}\ \tm{;} \\
+            &\dv \tm{int}\ \tm{id}\ \tm{=}\ \nt{Arith}\ \tm{;} \\
+            &\dv \tm{int}\ \tm{id}\ \tm{=}\ \nt{Arith}\ \tm{+}\ \nt{Term}\ \tm{;} \\
+            &\dv \tm{int}\ \tm{id}\ \tm{=}\ \nt{Term}\ \tm{+}\ \nt{Term}\ \tm{;} \\
+            &\dv \tm{int}\ \tm{id}\ \tm{=}\ \nt{Factor}\ \tm{+}\ \nt{Term}\ \tm{;} \\
+            &\dv \tm{int}\ \tm{id}\ \tm{=}\ \tm{id}\ \tm{+}\ \nt{Term}\ \tm{;} \\
+            &\dv \tm{int}\ \tm{id}\ \tm{=}\ \tm{id}\ \tm{+}\ \nt{Factor}\ \tm{;} \\
+            &\dv \tm{int}\ \tm{id}\ \tm{=}\ \tm{id}\ \tm{+}\ \tm{num}\ \tm{;}
+\end{align*}
+
+\textbf{Ví dụ 3.} Thứ tự ưu tiên của \texttt{x + 2 * 3}. Cây phân tích thể hiện
+\texttt{2 * 3} được kết hợp trước:
+
+\begin{center}
+\begin{forest}
+  for tree={
+    font=\small\itshape,
+    s sep=14pt, l sep=14pt,
+    edge={color=uplblue},
+    inner sep=2pt,
+  },
+  [Arith
+    [Arith [Term [Factor [{\upshape\tm{id}\,(x)}]]]]
+    [{\upshape\tm{+}}]
+    [Term
+      [Term [Factor [{\upshape\tm{num}\,(2)}]]]
+      [{\upshape\tm{*}}]
+      [Factor [{\upshape\tm{num}\,(3)}]]
+    ]
+  ]
+\end{forest}
+\end{center}
+
+\textbf{Ví dụ 4.} Một chương trình có rẽ nhánh và vòng lặp:
+
+\begin{lstlisting}
+begin
+  int x = 1;
+  if (x >= 1) then { print(x); } else { x = x + 1; }
+  do { x = x * 2; } while (x > 10);
+end
+\end{lstlisting}
+
+Chương trình trên được sinh như sau:
+\begin{itemize}
+  \item Luật \rn{1} cho khung \texttt{begin} \dots{} \texttt{end}.
+  \item Các luật \rn{2}, \rn{4}, \rn{13} cho khai báo \texttt{int x = 1;}.
+  \item Các luật \rn{7}, \rn{19}, \rn{25}, \rn{27} cho
+        \texttt{if} \dots{} \texttt{then} \dots{} \texttt{else} \dots{}
+        với phép so sánh \texttt{>=}.
+  \item Các luật \rn{8}, \rn{20}, \rn{25}, \rn{26} cho vòng
+        \texttt{do} \dots{} \texttt{while}.
+\end{itemize}
+
+% ======================= 9. Đối chiếu =======================
+\section{Đối chiếu với chương trình mẫu của đề}
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\linewidth}{@{}>{\ttfamily\raggedright\arraybackslash}p{6.2cm} X@{}}
+\toprule
+\textrm{\textbf{Đoạn mã trong đề}} & \textbf{Luật áp dụng} \\
+\midrule
+int x;                       & \rn{4}, \rn{12}, \rn{14} \\
+int y=x+1;                   & \rn{4}, \rn{13}, \rn{29}, \rn{30}, \rn{33}, \rn{34} \\
+if (x>a) then\{...\}else\{...\} & \rn{7}, \rn{19}, \rn{25}, \rn{26} \\
+if (x>=a) then\{...\}        & \rn{7}, \rn{18}, \rn{25}, \rn{27} \\
+bool x=a==b;                 & \rn{4}, \rn{13}, \rn{15}, \rn{25}, \rn{28} \\
+do\{...\}while(a>1);         & \rn{8}, \rn{20}, \rn{25}, \rn{26} \\
+a=(b+10)*b;                  & \rn{5}, \rn{16}, \rn{31}, \rn{37} \\
+print(a); / print(a+1);      & \rn{6}, \rn{17} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Toàn bộ chương trình mẫu của đề đều được văn phạm sinh ra. Các chỗ như
+\texttt{x>a} (so sánh \tm{int} với \tm{bool}) hay khai báo lại \texttt{x} hợp
+lệ về cú pháp và sẽ được phát hiện ở giai đoạn phân tích ngữ nghĩa nếu mở rộng
+sau này.
+
+\end{document}
