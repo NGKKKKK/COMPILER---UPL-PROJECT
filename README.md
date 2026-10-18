@@ -133,7 +133,7 @@ begin
 end
 ```
 
-Đặc điểm (theo đề bài):
+**Đặc điểm (theo đề bài)**:
 
 - Chương trình bắt đầu bằng `begin`, kết thúc bằng `end`.
 - Hai kiểu dữ liệu: `int` và `bool`. Biến có thể khởi tạo ngay khi khai báo.
@@ -144,19 +144,13 @@ end
 - Câu lệnh: khai báo, gán, `print(expr)`, `if ... then`, `if ... then ... else`,
   `do ... while`, `for`.
 
-**Các giả định thiết kế** (đề bài chưa nêu rõ):
+**Các giả định thiết kế**:
 
-1. `for (khởi_tạo; điều_kiện; cập_nhật) { ... }` kiểu C; khởi tạo là khai báo hoặc
-   gán, cập nhật là gán.
-2. Có thêm hằng boolean `true`, `false`.
-3. Thân `if`, `else`, `do`, `for` bắt buộc nằm trong `{ }`.
-4. So sánh không có tính kết hợp: `a > b > c` là lỗi cú pháp.
-5. Chỉ kiểm tra cú pháp. Khai báo trước khi dùng, khai báo lại, tương thích kiểu
-   thuộc giai đoạn ngữ nghĩa, **chưa cài đặt**.
-6. Định danh `[A-Za-z]+[0-9]*`, hằng số `[0-9]+`.
+- So sánh không có tính kết hợp. Ví dụ: `a > b > c` là lỗi cú pháp.
+- Chỉ kiểm tra cú pháp. Khai báo trước khi dùng, khai báo lại, tương thích kiểu
+  thuộc giai đoạn ngữ nghĩa, **chưa cài đặt**.
 
-Văn phạm đầy đủ (37 luật sinh) nằm trong `docs/main.tex` (biên dịch bằng XeLaTeX
-hoặc mở trên Overleaf) và bản PDF `docs/main.pdf`.
+Văn phạm đầy đủ (37 luật sinh) - bản .PDF nằm trong `docs/main.pdf`.
 
 ## 5. Kiến trúc
 
