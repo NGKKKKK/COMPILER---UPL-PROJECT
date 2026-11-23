@@ -19,7 +19,8 @@ Node *ast_root = NULL;   /* gốc AST, main.c đọc sau khi yyparse xong */
 %}
 
 %locations
-%define parse.error verbose
+%define parse.error custom
+%define parse.lac full
 %expect 0
 
 %union {
@@ -153,6 +154,69 @@ factor
     ;
 
 %%
+static const char *display_token(yysymbol_kind_t token)
+{
+    switch (token) {
+        case YYSYMBOL_T_GE:
+            return "'>='";
+        case YYSYMBOL_T_EQ:
+            return "'=='";
+        default:
+            return yysymbol_name(token);
+    }
+}
+
+static int yyreport_syntax_error(const yypcontext_t *ctx)
+{
+    enum { MAX_EXPECTED = 64 };
+    yysymbol_kind_t expected[MAX_EXPECTED];
+
+    int count = yypcontext_expected_tokens(
+        ctx, expected, MAX_EXPECTED
+    );
+
+    char msg[2048];
+    size_t used = 0;
+
+    yysymbol_kind_t unexpected = yypcontext_token(ctx);
+
+    int n = snprintf(
+        msg, sizeof(msg),
+        "unexpected %s",
+        display_token(unexpected)
+    );
+
+    if (n < 0) return 0;
+    used = (size_t)n;
+
+    if (count > 0) {
+        for (int i = 0; i < count; i++) {
+            if (used >= sizeof(msg)) break;
+
+            n = snprintf(
+                msg + used,
+                sizeof(msg) - used,
+                "%s%s",
+                i == 0 ? ", expecting " : " or ",
+                display_token(expected[i])
+            );
+
+            if (n < 0) break;
+            used += (size_t)n;
+        }
+    }
+
+    const YYLTYPE *loc = yypcontext_location(ctx);
+
+    error_report(
+        "syntax error",
+        loc->first_line,
+        loc->first_column,
+        msg
+    );
+
+    return 0;
+}
 
 /* Parser là nơi duy nhất phát hiện mọi lỗi "dãy token sai văn phạm", gồm cả
    các id sai dạng (1abc, a1b, ab1cc): lexer đã tách chúng thành các token

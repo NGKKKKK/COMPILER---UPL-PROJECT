@@ -1,6 +1,7 @@
 begin
-  int _x;
-  x = 3 < 4;
-  y = 1 @;
-  /* comment khong dong
+  int -x = _34 @;
+  int a = 3.0;
+  bool b = 3 > 4;
+  bool c = 3 + 4;
+  bool d = (3 > 5) + (2 < 4);
 end
