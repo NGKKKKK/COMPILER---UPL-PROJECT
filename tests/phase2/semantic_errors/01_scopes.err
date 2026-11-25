@@ -1,0 +1,8 @@
+2:9: semantic error: variable 'later' is not declared
+4:3: semantic error: duplicate declaration of 'later' (first at 3:3)
+5:14: semantic error: variable 'self' is not declared
+7:3: semantic error: variable 'local' is not declared
+7:11: semantic error: variable 'unknown' is not declared
+8:53: semantic error: variable 'left' is not declared
+10:9: semantic error: variable 'index' is not declared
+11:35: semantic error: variable 'done' is not declared

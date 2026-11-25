@@ -20,6 +20,8 @@ typedef struct Node Node;
 struct Node {
     NodeKind kind;
     Location loc;
+    VarType expr_type;  /* kiểu của node biểu thức sau khi kiểm tra */
+    int symbol_id;      /* mục bảng ký hiệu của Decl, Assign hoặc Id */
     union {
         /* NODE_PROGRAM, NODE_BLOCK: danh sách câu lệnh */
         struct { Node **stmts; int count, cap; } block;

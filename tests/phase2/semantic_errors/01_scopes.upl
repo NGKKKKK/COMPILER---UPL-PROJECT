@@ -1,0 +1,12 @@
+begin
+  print(later);
+  int later = 1;
+  int later = 2;
+  int self = self;
+  { int local = 0; }
+  local = unknown;
+  if (true) then { bool left = true; } else { print(left); }
+  for (int index = 0; index == 0; index = index + 1) {}
+  print(index);
+  do { bool done = true; } while (done);
+end

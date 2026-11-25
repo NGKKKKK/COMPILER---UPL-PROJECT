@@ -1,0 +1,21 @@
+begin
+  int value = 7;
+  {
+    int value = value + 1;
+    print(value);
+    { bool value = true; print(value); }
+    print(value);
+  }
+  print(value);
+  for (int value = 1; value == 1; value = value + 1) {
+    bool value = false;
+    print(value);
+  }
+  print(value);
+  for (value = 1; 2 > value; value = value + 1) {}
+  print(value);
+  int count;
+  bool flag;
+  print(count);
+  print(flag);
+end

@@ -56,6 +56,50 @@ check_errors() {
     done
 }
 
+# compile_and_run <chương trình> <stdout mong đợi>
+compile_and_run() {
+    local f=$1 want=$2 out="$tmp/$(basename "$1" .upl)"
+    if ! "$BIN" --compile "$out" "$f" >"$tmp/compile.log" 2>&1; then
+        cat "$tmp/compile.log" >&2
+        bad "$f" "không biên dịch được"
+    elif [ ! -f "$out/UplProgram.tac" ] || [ ! -s "$out/UplProgram.j" ] ||
+         [ ! -s "$out/UplProgram.class" ]; then
+        bad "$f" "thiếu TAC, Jasmin hoặc class"
+    elif ! timeout 10s java -Xverify:all -cp "$out" UplProgram >"$tmp/stdout"; then
+        bad "$f" "lớp JVM lỗi hoặc chạy quá 10 giây"
+    elif ! diff -u "$want" "$tmp/stdout"; then
+        bad "$f" "kết quả JVM khác mong đợi"
+    else
+        ok "$f (JVM)"
+    fi
+}
+
+# compile_with_errors <chương trình> <loại lỗi> [diagnostics mong đợi]
+compile_with_errors() {
+    local f=$1 kind=$2 expected=$3 out="$tmp/rejected"
+    "$BIN" --compile "$out" "$f" >"$tmp/stdout" 2>"$tmp/stderr"
+    local code=$?
+    if [ "$code" -ne 1 ] || [ -e "$out" ]; then
+        bad "$f" "cần mã thoát 1 và không sinh file"
+    elif ! grep -q ": $kind error:" "$tmp/stderr"; then
+        bad "$f" "thiếu lỗi $kind"
+    elif [ -n "$expected" ]; then
+        local count
+        count=$(wc -l < "$expected")
+        cut -d: -f2- "$tmp/stderr" >"$tmp/diagnostics"
+        if ! diff -u "$expected" "$tmp/diagnostics" ||
+           [ "$(cat "$tmp/stdout")" != "Found $count error(s)." ]; then
+            bad "$f" "chẩn đoán khác mong đợi"
+        else
+            ok "$f ($count lỗi ngữ nghĩa)"
+        fi
+    elif grep -q ': semantic error:' "$tmp/stderr"; then
+        bad "$f" "đã chạy kiểm tra ngữ nghĩa dù có lỗi lexer/parser"
+    else
+        ok "$f (dừng trước pha ngữ nghĩa)"
+    fi
+}
+
 echo "== Lexer =="
 run_dir lexical_ok 0 --tokens
 check_errors lexical_errors --tokens
@@ -63,6 +107,24 @@ check_errors lexical_errors --tokens
 echo "== Parser =="
 run_dir valid 0
 check_errors syntax_errors
+
+echo "== BTL02 =="
+tmp=$(mktemp -d) || exit 2
+trap 'rm -rf -- "$tmp"' EXIT
+if ! command -v java >/dev/null || ! command -v jasmin >/dev/null; then
+    bad "BTL02" "cần java và jasmin trong PATH"
+else
+    for f in tests/phase2/valid/*.upl; do
+        compile_and_run "$f" "${f%.upl}.out"
+    done
+    compile_and_run tests/valid/02_empty.upl tests/phase2/empty.out
+fi
+
+for f in tests/phase2/semantic_errors/*.upl; do
+    compile_with_errors "$f" semantic "${f%.upl}.err"
+done
+compile_with_errors tests/lexical_errors/01_invalid_characters.upl lexical
+compile_with_errors tests/syntax_errors/01_missing_then.upl syntax
 
 echo "----"
 echo "Passed: $pass, Failed: $fail"

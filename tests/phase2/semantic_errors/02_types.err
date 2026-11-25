@@ -1,0 +1,14 @@
+2:15: semantic error: initializer requires bool, got int
+3:16: semantic error: initializer requires int, got bool
+4:12: semantic error: assignment requires int, got bool
+5:14: semantic error: arithmetic operands must both be int
+6:11: semantic error: arithmetic operands must both be int
+7:14: semantic error: ordered comparison operands must both be int
+8:11: semantic error: ordered comparison operands must both be int
+9:14: semantic error: equality operands must have the same type
+10:7: semantic error: if condition requires bool, got int
+11:16: semantic error: do-while condition requires bool, got int
+12:19: semantic error: for condition requires bool, got int
+12:26: semantic error: assignment requires int, got bool
+13:9: semantic error: variable 'missing' is not declared
+13:19: semantic error: variable 'other' is not declared

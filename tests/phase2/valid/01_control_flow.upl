@@ -1,0 +1,12 @@
+begin
+  int sum = 0;
+  for (int i = 1; 4 > i; i = i + 1) {
+    if (i == 2) then { sum = sum + i * 10; }
+    else { sum = sum + i; }
+  }
+  do {
+    sum = sum + 1;
+  } while (26 > sum);
+  if (sum >= 26) then { print(sum); }
+  print(sum == 26);
+end

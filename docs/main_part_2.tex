@@ -1,0 +1,307 @@
+% !TEX program = xelatex
+% Biên dịch bằng XeLaTeX, dùng cùng bộ phông với báo cáo BTL01.
+\documentclass[11pt,a4paper]{article}
+
+% ---------- Phông chữ (hỗ trợ đầy đủ tiếng Việt) ----------
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Pagella}
+\setsansfont{TeX Gyre Heros}
+\setmonofont{Latin Modern Mono}[Scale=MatchLowercase]
+
+% ---------- Trang giấy, tiêu đề ----------
+\usepackage[a4paper,margin=2.5cm,headheight=22pt]{geometry}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+% ---------- Bảng, công thức, mã ----------
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{listings}
+
+% ---------- Màu và kiểu chữ ----------
+\definecolor{uplblue}{HTML}{1F3A5F}
+\definecolor{uplgray}{HTML}{F3F5F8}
+\definecolor{uplrule}{HTML}{C9D1DC}
+\definecolor{upltok}{HTML}{8A2D1F}
+
+\titleformat{\section}
+  {\sffamily\Large\bfseries\color{uplblue}}
+  {\thesection.}{0.6em}{}[\vspace{-0.4em}{\color{uplrule}\titlerule}]
+\titlespacing*{\section}{0pt}{2.0ex plus 0.5ex}{1.2ex}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{uplrule}\leaders\hrule height \headrulewidth\hfill}}
+\lhead{\small\sffamily\color{uplblue} Trình biên dịch UPL trên JVM}
+\rhead{\small\sffamily\color{uplblue} BTL02}
+\cfoot{\small\thepage}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\renewcommand{\arraystretch}{1.25}
+\setlist[itemize]{itemsep=0.25em,topsep=0.3em}
+\setlist[enumerate]{itemsep=0.25em,topsep=0.3em}
+
+\newcommand{\tm}[1]{\texttt{\textcolor{upltok}{#1}}}
+
+% ---------- Mã nguồn UPL ----------
+\lstdefinelanguage{UPL}{
+  morekeywords={begin,end,int,bool,if,then,else,do,while,for,print,true,false},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+}
+\lstset{
+  language=UPL,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{uplblue},
+  commentstyle=\itshape\color{gray},
+  backgroundcolor=\color{uplgray},
+  frame=single,
+  rulecolor=\color{uplrule},
+  framesep=6pt,
+  xleftmargin=0pt,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  breaklines=true,
+}
+
+\begin{document}
+
+\begin{flushleft}
+  {\sffamily\bfseries\fontsize{22}{27}\selectfont\color{uplblue}
+   TRÌNH BIÊN DỊCH UPL TRÊN JVM\\[2pt] PHÂN TÍCH NGỮ NGHĨA VÀ SINH MÃ\par}
+  \vspace{0.8em}
+  {\color{uplrule}\rule{\linewidth}{0.8pt}}\par
+  \vspace{0.2em}
+  \begin{tabular}{@{}l@{\hspace{0.6em}}l@{}}
+    24021485 & Lã Việt Hoàng \\
+    24021533 & Nguyễn Đức Khiêm \\
+  \end{tabular}
+\end{flushleft}
+
+\section{Kiến trúc trình biên dịch}
+
+Giai đoạn 2 sử dụng lại lexer Flex, parser Bison và AST của BTL01.
+Trình biên dịch bổ sung pha kiểm tra ngữ nghĩa, biểu diễn mã ba địa chỉ
+(Three-Address Code, TAC) và bộ sinh mã JVM theo phương án A của đề bài.
+
+\[
+  \begin{aligned}
+    \text{UPL} &\xrightarrow{\text{Flex, Bison}} \text{AST}
+    \xrightarrow{\text{ngữ nghĩa}} \text{AST có kiểu và ID biến} \\
+    &\xrightarrow{\text{sinh TAC}} \text{TAC}
+    \xrightarrow{\text{sinh Jasmin}} \texttt{.j}
+    \xrightarrow{\text{Jasmin}} \texttt{.class}
+  \end{aligned}
+\]
+
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+\textbf{Tệp} & \textbf{Nhiệm vụ} \\
+\midrule
+\texttt{src/main.c} & Điều phối các pha và xử lý dòng lệnh \\
+\texttt{src/semantic.c} & Bảng ký hiệu, phạm vi, liên kết định danh và kiểm tra kiểu \\
+\texttt{src/tac.c} & Duyệt AST đã kiểm tra, sinh bộ bốn và xuất TAC dạng văn bản \\
+\texttt{src/jvm.c} & Ánh xạ slot, ghi mã Jasmin và gọi trình lắp ráp \\
+\bottomrule
+\end{tabularx}
+
+Chế độ \texttt{--compile} chạy toàn bộ các pha. Pha ngữ nghĩa bắt đầu khi lexer
+và parser đã xử lý thành công. Khi phát hiện lỗi ngữ nghĩa, trình biên dịch báo
+các lỗi tìm được và dừng trước khi sinh mã. Lớp đầu ra có phương thức
+\texttt{public static void main(String[] args)} để chạy trên JVM.
+
+\section{Bảng ký hiệu và phạm vi}
+
+Mỗi mục trong \texttt{SymbolTable} lưu tên biến, kiểu \tm{int} hoặc \tm{bool},
+ID phạm vi và dòng, cột của khai báo. Chỉ số của mục trong bảng là ID duy nhất
+của biến. Chỉ số này được gắn vào node khai báo, gán hoặc đọc biến trong AST
+và được dùng xuyên suốt khi sinh mã.
+
+\begin{itemize}
+  \item Chương trình có phạm vi gốc. Mỗi khối \texttt{\{ \}} mở phạm vi con.
+        Nhánh \tm{then} và \tm{else} có phạm vi riêng. Điều kiện
+        \tm{do-while} được kiểm tra trong phạm vi chứa vòng lặp.
+  \item \tm{for} mở một phạm vi bao quanh phần khởi tạo, điều kiện, cập nhật
+        và khối thân. Khai báo ở phần khởi tạo có hiệu lực đến hết vòng lặp.
+        Khối thân vẫn có thể khai báo biến cùng tên trong phạm vi con.
+  \item Khi dùng biến, trình biên dịch tìm từ phạm vi hiện tại ra các phạm vi
+        cha và lấy khai báo gần nhất. Khi khai báo, chỉ kiểm tra trùng tên ở
+        phạm vi hiện tại. Bảng vẫn giữ ID của biến sau khi rời phạm vi.
+  \item Biểu thức khởi tạo được kiểm tra trước khi đưa biến mới vào bảng.
+        Với \texttt{int x = x + 1;} trong khối con, \texttt{x} bên phải
+        là biến ở phạm vi ngoài nếu biến đó đã được khai báo.
+\end{itemize}
+
+\clearpage
+\section{Quy tắc ngữ nghĩa}
+
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{4.6cm} X@{}}
+\toprule
+\textbf{Cấu trúc} & \textbf{Ràng buộc} \\
+\midrule
+Khai báo có khởi tạo, phép gán & Kiểu của biểu thức phải trùng kiểu biến \\
+\addlinespace
+Khai báo thiếu khởi tạo & Giá trị ban đầu là \tm{0} với \tm{int}, \tm{false} với \tm{bool} \\
+\addlinespace
+\tm{+}, \tm{*} & Hai toán hạng \tm{int}, kết quả \tm{int} \\
+\tm{>}, \tm{>=} & Hai toán hạng \tm{int}, kết quả \tm{bool} \\
+\tm{==} & Hai toán hạng cùng kiểu, kết quả \tm{bool} \\
+\addlinespace
+Điều kiện của \tm{if}, \tm{do-while}, \tm{for}
+& Biểu thức điều kiện có kiểu \tm{bool} \\
+\addlinespace
+\tm{print} & Chấp nhận biểu thức hợp lệ kiểu \tm{int} hoặc \tm{bool} \\
+\bottomrule
+\end{tabularx}
+
+Mỗi lỗi được in theo dạng \texttt{file:dòng:cột: semantic error: mô tả}.
+Biểu thức lỗi được đánh dấu trong quá trình duyệt để tránh phát sinh chẩn
+đoán sai kiểu dây chuyền. Hai toán hạng vẫn được kiểm tra độc lập, nên
+\texttt{print(missing + other);} báo được cả hai tên chưa khai báo.
+
+\section{Biểu diễn và sinh TAC}
+
+TAC là dãy bộ bốn \texttt{(op, arg1, arg2, result)}. Toán hạng là hằng,
+biến \texttt{vN}, biến tạm \texttt{tN}, nhãn \texttt{LN} hoặc trường rỗng.
+Hằng, biến và biến tạm mang kiểu dữ liệu. Phần đầu tệp TAC liệt kê các biến
+theo ID, kèm tên gốc, kiểu, phạm vi và vị trí khai báo.
+
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{5.3cm} X@{}}
+\toprule
+\textbf{TAC} & \textbf{Cách sinh} \\
+\midrule
+\texttt{vN = x} & Ghi giá trị khởi tạo hoặc kết quả biểu thức gán vào biến \\
+\texttt{tN = x op y} & Duyệt hai toán hạng trước, rồi ghi phép toán vào một biến tạm \\
+\texttt{LN:}, \texttt{goto LN} & Đánh dấu đích hoặc chuyển điều khiển vô điều kiện \\
+\texttt{if x goto LN} & Chuyển điều khiển khi điều kiện đúng \\
+\texttt{ifFalse x goto LN} & Chuyển điều khiển khi điều kiện sai \\
+\texttt{print x} & In giá trị của toán hạng theo kiểu \\
+\bottomrule
+\end{tabularx}
+
+\begin{itemize}
+  \item \tm{if} sinh \texttt{ifFalse} để bỏ qua nhánh \tm{then}. Nếu có
+        \tm{else}, cuối nhánh \tm{then} sinh thêm \texttt{goto} đến nhãn
+        hội tụ sau nhánh \tm{else}.
+  \item \tm{do-while} đặt nhãn trước thân. Sau khi sinh thân và điều kiện,
+        lệnh \texttt{if} quay lại đầu thân nếu điều kiện đúng.
+  \item \tm{for} sinh khởi tạo trước nhãn kiểm tra. Sau điều kiện là
+        \texttt{ifFalse} tới nhãn thoát. Khi điều kiện đúng, thân chạy trước
+        cập nhật, rồi \texttt{goto} quay lại nhãn kiểm tra.
+\end{itemize}
+
+\clearpage
+\section{Dịch TAC sang JVM}
+
+Đoạn TAC mẫu của vòng \tm{do-while} dùng \texttt{v0} cho biến \texttt{sum}.
+
+\begin{lstlisting}[language={}]
+L4:
+  t6:int = v0 + 1
+  v0 = t6
+  t7:bool = 26 > v0
+  if t7 goto L4
+\end{lstlisting}
+
+Cả \tm{int} và \tm{bool} dùng nhóm lệnh nạp và lưu số nguyên của JVM.
+Giá trị boolean được biểu diễn bằng \texttt{0} và \texttt{1}. Kiểu lưu trong
+TAC quyết định hàm \texttt{println} được gọi.
+
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{4cm} X@{}}
+\toprule
+\textbf{Dạng TAC} & \textbf{Lệnh JVM tương ứng} \\
+\midrule
+Hằng & \texttt{iconst\_n}, \texttt{bipush}, \texttt{sipush} hoặc
+       \texttt{ldc\_w} tùy miền giá trị \\
+Gán & Nạp hằng hoặc \texttt{iload}, sau đó \texttt{istore} \\
+\tm{+}, \tm{*} & Nạp hai toán hạng, thực hiện \texttt{iadd} hoặc
+                    \texttt{imul}, rồi lưu kết quả \\
+\tm{>}, \tm{>=}, \tm{==} & \texttt{if\_icmpgt}, \texttt{if\_icmpge} hoặc
+  \texttt{if\_icmpeq}, rồi nạp \texttt{0} hoặc \texttt{1} và lưu vào biến tạm \\
+Nhãn và nhảy & Giữ nhãn TAC, dùng \texttt{goto\_w} để nhảy. Nhánh có điều
+  kiện dùng \texttt{ifeq} hoặc \texttt{ifne} tới nhãn gần để bỏ qua
+  \texttt{goto\_w} khi cần \\
+\tm{print} & \texttt{getstatic} nạp \texttt{System.out}, nạp giá trị, rồi gọi
+  \texttt{println(I)V} cho \tm{int} hoặc \texttt{println(Z)V} cho \tm{bool} \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Ánh xạ biến cục bộ}
+
+Slot 0 chứa đối số \texttt{String[]} của \texttt{main}. Với $V$ biến UPL
+và $T$ biến tạm, biến \texttt{v}$i$ dùng slot $1+i$ và biến tạm
+\texttt{t}$j$ dùng slot $1+V+j$. Do đó \texttt{.limit locals} là $1+V+T$.
+Ví dụ mẫu có $V=2$ và $T=10$, nên dùng 13 slot. Hai biến che khuất nhau có hai
+ID khác nhau và luôn dùng hai slot khác nhau.
+
+\subsection{Ngăn xếp toán hạng}
+
+Ngăn xếp rỗng ở đầu và cuối mỗi bộ bốn. Phép toán hai ngôi nạp tối đa hai
+giá trị, phép so sánh tiêu thụ hai toán hạng và hợp nhất hai nhánh nội bộ với
+đúng một giá trị \texttt{0} hoặc \texttt{1} trước khi lưu. Lệnh in đặt đối
+tượng \texttt{PrintStream} và giá trị trên ngăn xếp rồi tiêu thụ cả hai khi gọi
+\texttt{println}. Do đó \texttt{.limit stack 2} đủ cho mọi bộ bốn.
+
+Trình sinh mã kiểm tra giới hạn slot và số byte của phương thức \texttt{main}
+trước khi lắp ráp. Các bước nhảy xa dùng \texttt{goto\_w} để xử lý thân
+vòng lặp hoặc nhánh dài.
+
+\clearpage
+\section{Kiểm thử}
+
+\texttt{make test} chạy bộ kiểm thử BTL01 và BTL02. Với chương trình hợp lệ,
+bộ test lắp ráp, chạy \texttt{java -Xverify:all} và đối chiếu đầu ra với
+tệp \texttt{.out}. Với lỗi ngữ nghĩa, bộ test so dòng, cột và nội dung với tệp
+\texttt{.err}, đồng thời kiểm tra mã thoát và thư mục đầu ra.
+
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{4.4cm} X X@{}}
+\toprule
+\textbf{Ca kiểm thử} & \textbf{Kết quả mong đợi} & \textbf{Kết quả thực tế} \\
+\midrule
+\texttt{01\_control\_flow} & In \texttt{26}, \texttt{true} & Khớp cả hai dòng \\
+\texttt{02\_scopes} & In giá trị của biến theo phạm vi và giá trị mặc định
+  & Khớp 9 dòng trong \texttt{.out} \\
+\texttt{03\_expressions} & Đúng độ ưu tiên, so sánh, giá trị biên và số lượt lặp
+  & Khớp 11 dòng trong \texttt{.out} \\
+\texttt{02\_empty} & JVM chạy thành công, đầu ra rỗng & Mã thoát 0, đầu ra rỗng \\
+\texttt{01\_scopes} (lỗi) & 8 lỗi liên kết tên và phạm vi
+  & Khớp 8 chẩn đoán, không sinh mã \\
+\texttt{02\_types} (lỗi) & 14 lỗi kiểu và định danh
+  & Khớp 14 chẩn đoán, không sinh mã \\
+Lỗi lexer và parser khi biên dịch & Mã thoát 1, dừng trước pha ngữ nghĩa
+  & Cả hai ca đều đạt \\
+\bottomrule
+\end{tabularx}
+
+Bộ kiểm thử đạt 33/33 với Jasmin 2.5.0 và OpenJDK 21. Các ca kiểm tra thêm
+xác nhận lớp dùng hơn 255 slot và có bước nhảy xa chạy được trên JVM.
+Trình biên dịch từ chối phương thức \texttt{main} vượt giới hạn 65535 byte.
+
+Các tệp \texttt{UplProgram.tac}, \texttt{UplProgram.j} và
+\texttt{UplProgram.class} trong \texttt{examples/phase2/} được sinh từ
+\texttt{01\_control\_flow.upl}.
+
+\begin{lstlisting}[language={}]
+make
+build/upl --compile build/btl02-demo tests/phase2/valid/01_control_flow.upl
+java -Xverify:all -cp build/btl02-demo UplProgram
+\end{lstlisting}
+
+Kết quả thực tế của lớp mẫu gồm hai dòng.
+
+\begin{lstlisting}[language={}]
+26
+true
+\end{lstlisting}
+
+\end{document}

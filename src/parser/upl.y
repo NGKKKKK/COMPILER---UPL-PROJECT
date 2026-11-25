@@ -19,9 +19,14 @@ Node *ast_root = NULL;   /* gốc AST, main.c đọc sau khi yyparse xong */
 %}
 
 %locations
+<<<<<<< HEAD
 %define parse.error custom
 %define parse.lac full
+=======
+%define parse.error verbose 
+>>>>>>> 5cf0b54 (update phase 2 - semantic)
 %expect 0
+
 
 %union {
     int       ival;
@@ -31,6 +36,7 @@ Node *ast_root = NULL;   /* gốc AST, main.c đọc sau khi yyparse xong */
     BinOpKind op;
 }
 
+/* Khai báo tokens */
 %token T_BEGIN T_END T_INT T_BOOL
 %token T_IF T_THEN T_ELSE T_DO T_WHILE T_FOR
 %token T_PRINT T_TRUE T_FALSE
@@ -38,6 +44,7 @@ Node *ast_root = NULL;   /* gốc AST, main.c đọc sau khi yyparse xong */
 %token <sval> T_ID
 %token <ival> T_NUM
 
+/* Khai báo non-terminate */
 %type <node>  program stmt_list stmt block decl assign print_stmt
 %type <node>  if_stmt do_while for_stmt for_init
 %type <node>  expr arith term factor

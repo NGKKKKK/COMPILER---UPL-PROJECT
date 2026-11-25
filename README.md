@@ -1,7 +1,8 @@
-# UPL Compiler (BTL01)
+# UPL Compiler (BTL01 và BTL02)
 
-Bộ phân tích từ vựng, phân tích cú pháp và dựng cây cú pháp trừu tượng (AST)
-cho ngôn ngữ lập trình **UPL**, viết bằng **Flex** (lexer), **Bison** (parser) và C.
+Trình biên dịch **UPL** dùng **Flex** và **Bison** để phân tích từ vựng, cú pháp
+và dựng AST. Giai đoạn 2 kiểm tra ngữ nghĩa, sinh mã ba địa chỉ (TAC) và
+dịch TAC sang bytecode JVM qua **Jasmin**.
 
 Nhóm thực hiện:
 
@@ -22,6 +23,7 @@ Nhóm thực hiện:
 8. [AST](#8-ast)
 9. [Kiểm thử](#9-kiểm-thử)
 10. [Cấu trúc thư mục](#10-cấu-trúc-thư-mục)
+11. [Biên dịch và chạy trên JVM](#11-biên-dịch-và-chạy-trên-jvm)
 
 ---
 
@@ -32,6 +34,7 @@ Nhóm thực hiện:
 - **Parser** (Bison): kiểm tra chương trình theo văn phạm phi ngữ cảnh của UPL,
   dựng AST, **báo được nhiều lỗi trong một lần chạy** nhờ phục hồi lỗi.
 - **AST**: định nghĩa node, hàm tạo, in cây và giải phóng bộ nhớ.
+- **Biên dịch JVM**: kiểm tra phạm vi và kiểu, xuất TAC, sinh Jasmin và lắp ráp lớp JVM.
 - **Báo lỗi tập trung**: mọi lỗi đều đi qua một chỗ, định dạng thống nhất
   `file:dòng:cột: loại lỗi: mô tả`, trong đó:
   - `file`: đường dẫn file UPL đang phân tích.
@@ -39,7 +42,7 @@ Nhóm thực hiện:
   - `cột`: vị trí ký tự đầu tiên của token gây lỗi trên dòng đó, **đếm từ 1**
     (mỗi ký tự, kể cả dấu cách và tab, tính là 1 cột).
   - `loại lỗi`: `lexical error` (lỗi từ vựng, do lexer) hoặc `syntax error`
-    (lỗi cú pháp, do parser).
+    (lỗi cú pháp, do parser) hoặc `semantic error` (lỗi ngữ nghĩa).
   - `mô tả`: nội dung lỗi, ví dụ `unexpected character '@'`.
 
   Ví dụ `prog.upl:4:9: lexical error: unexpected character '@'` nghĩa là lỗi ở
@@ -47,13 +50,14 @@ Nhóm thực hiện:
 
 ## 2. Yêu cầu cài đặt
 
-`gcc`, `make`, `flex`, `bison`.
+`gcc`, GNU Make 4.3 trở lên, `flex`, `bison`. Cần `java` và `jasmin`
+trong `PATH` để biên dịch lớp JVM và chạy bộ kiểm thử đầy đủ.
 
 Ubuntu / WSL:
 
 ```bash
 sudo apt update
-sudo apt install gcc make flex bison
+sudo apt install gcc make flex bison default-jre-headless jasmin-sable
 ```
 
 ## 3. Build và chạy
@@ -69,6 +73,7 @@ Chạy chương trình:
 
 ```bash
 build/upl [--tokens] [--quiet] <file.upl>
+build/upl --compile <thư-mục-đầu-ra> <file.upl>
 ```
 
 | Cách chạy                     | Tác dụng                                                         |
@@ -76,6 +81,8 @@ build/upl [--tokens] [--quiet] <file.upl>
 | `build/upl file.upl`          | Chạy lexer + parser; nếu không có lỗi thì in AST                 |
 | `build/upl --quiet file.upl`  | Như trên nhưng **không in AST**, chỉ in `OK: no errors.`         |
 | `build/upl --tokens file.upl` | **Chỉ chạy lexer**, in từng token (dùng để kiểm tra riêng lexer) |
+
+Chế độ `--compile` sinh TAC và lớp JVM. Xem mục [11](#11-biên-dịch-và-chạy-trên-jvm).
 
 Chế độ `--tokens` in mỗi token trên một dòng gồm vị trí `dòng:cột`, tên token và
 lexeme (đoạn chữ gốc). Cuối cùng in `Lexing OK.` hoặc `Found N error(s).`.
@@ -88,8 +95,8 @@ lexeme (đoạn chữ gốc). Cuối cùng in `Lexing OK.` hoặc `Found N error
 | Mã  | Ý nghĩa                                                |
 | --- | ------------------------------------------------------ |
 | `0` | Không có lỗi                                           |
-| `1` | Có lỗi (từ vựng hoặc cú pháp)                          |
-| `2` | Sai cách dùng (thiếu tên file) hoặc không mở được file |
+| `1` | Có lỗi từ vựng, cú pháp hoặc ngữ nghĩa                |
+| `2` | Sai cách dùng, lỗi truy cập file hoặc lỗi sinh mã JVM |
 
 **Xem mã thoát:** mã thoát không tự hiện ra màn hình. Trong bash (Ubuntu/WSL), gõ
 `echo $?` **ngay sau** lệnh chạy để xem mã của lệnh vừa chạy:
@@ -147,8 +154,10 @@ end
 **Các giả định thiết kế**:
 
 - So sánh không có tính kết hợp. Ví dụ: `a > b > c` là lỗi cú pháp.
-- Chỉ kiểm tra cú pháp. Khai báo trước khi dùng, khai báo lại, tương thích kiểu
-  thuộc giai đoạn ngữ nghĩa, **chưa cài đặt**.
+- Mỗi khối có phạm vi riêng. Khai báo trong phần khởi tạo của `for` có hiệu lực
+  đến hết vòng lặp. Điều kiện `do ... while` nằm ngoài phạm vi khối thân.
+- Biến khai báo thiếu biểu thức khởi tạo nhận `0` với `int` hoặc `false` với `bool`.
+  Biến mới chỉ có hiệu lực sau khi kiểm tra biểu thức khởi tạo.
 
 Văn phạm đầy đủ (37 luật sinh) - bản .PDF nằm trong `docs/main.pdf`.
 
@@ -221,6 +230,10 @@ Cách đọc `file:dòng:cột`: ví dụ `2:7` là dòng 2, cột 7 (đếm t�
 gặp lúc phát hiện lỗi. Ở dòng 2, `1abc` bị lexer tách thành `T_NUM(1) T_ID(abc)`; parser
 đang chờ tên biến sau `int` nhưng gặp số `1` nên báo lỗi tại cột 7.
 
+**Lỗi ngữ nghĩa** (chế độ `--compile`, `semantic error`) được báo kèm dòng,
+cột và nguyên nhân. Trình biên dịch tiếp tục kiểm tra các câu lệnh còn lại và
+chỉ sinh TAC và lớp JVM khi mã nguồn qua cả ba pha kiểm tra.
+
 ## 8. AST
 
 Với chương trình:
@@ -260,8 +273,10 @@ make test
 | ----------------------- | ------ | ---------- | ----------------------------------------------------------------------- |
 | `tests/lexical_ok/`     | Lexer  | `--tokens` | Không có lỗi từ vựng. File `.tokens` (nếu có) là dãy tên token mong đợi |
 | `tests/lexical_errors/` | Lexer  | `--tokens` | Số lỗi bằng `// EXPECT: N`                                              |
-| `tests/valid/`          | Parser | đầy đủ     | Mã thoát `0`                                                            |
-| `tests/syntax_errors/`  | Parser | đầy đủ     | Số lỗi bằng `// EXPECT: N`                                              |
+| `tests/valid/`          | Parser | mặc định  | Mã thoát `0`                                                            |
+| `tests/syntax_errors/`  | Parser | mặc định  | Số lỗi bằng `// EXPECT: N` |
+| `tests/phase2/valid/` | JVM | `--compile` rồi `java -Xverify:all` | So sánh đầu ra với file `.out` |
+| `tests/phase2/semantic_errors/` | Ngữ nghĩa | `--compile` | Mã thoát 1, chẩn đoán khớp file `.err` và không sinh file |
 
 Dòng `// EXPECT: N` nằm ở đầu file test, `N` là số lỗi chương trình phải báo.
 Kết quả cuối cùng in `Passed: ..., Failed: ...`.
@@ -273,12 +288,44 @@ Thư mục `examples/` chứa các chương trình UPL minh họa (đúng, lỗi
 
 | Đường dẫn          | Nội dung                                                                               |
 | ------------------ | -------------------------------------------------------------------------------------- |
-| `docs/`            | Văn phạm CFG (nộp bài): `main.tex` (LaTeX) và `main.pdf`                               |
+| `docs/`            | Báo cáo văn phạm BTL01 (`main.tex`, `main.pdf`) và báo cáo triển khai BTL02 (`main_part_2.tex`) |
 | `src/lexer/upl.l`  | Luật Flex: token, bỏ comment, lỗi từ vựng, theo dõi dòng/cột                           |
 | `src/parser/upl.y` | Luật Bison: văn phạm, dựng AST, phục hồi lỗi                                           |
 | `src/ast/`         | `ast.h` (định nghĩa node), `ast.c` (tạo/giải phóng), `ast_print.c` (in cây)            |
 | `src/common/`      | `location.h` (vị trí), `error.c/.h` (báo lỗi tập trung), `token_name.c/.h` (tên token) |
-| `src/main.c`       | Điểm vào chương trình, xử lý tùy chọn dòng lệnh                                        |
-| `tests/`           | `lexical_ok/`, `lexical_errors/`, `valid/`, `syntax_errors/`, `run_tests.sh`           |
-| `examples/`        | Chương trình UPL minh họa và `output/` (kết quả chạy)                                  |
+| `src/main.c`       | Xử lý dòng lệnh và điều phối các pha                                                  |
+| `src/semantic.c`   | Bảng ký hiệu và kiểm tra ngữ nghĩa                                                     |
+| `src/tac.c`        | Sinh và xuất TAC                                                                      |
+| `src/jvm.c`        | Dịch TAC sang Jasmin và gọi trình lắp ráp lớp JVM                                      |
+| `tests/`           | `lexical_ok/`, `lexical_errors/`, `valid/`, `syntax_errors/`, `phase2/`, `run_tests.sh`           |
+| `examples/`        | Chương trình UPL minh họa và `output/` (kết quả chạy), `phase2/` (TAC, Jasmin, lớp JVM mẫu)                                  |
 | `build/`           | File sinh ra khi build (không đưa vào git)                                             |
+
+## 11. Biên dịch và chạy trên JVM
+
+Chạy từ thư mục dự án. Trình biên dịch tự tạo thư mục đầu ra, nên đường dẫn
+`build/btl02-demo` phải chưa tồn tại và thư mục cha phải có sẵn.
+
+```bash
+make
+build/upl --compile build/btl02-demo tests/phase2/valid/01_control_flow.upl
+java -Xverify:all -cp build/btl02-demo UplProgram
+```
+
+Kết quả chương trình:
+
+```text
+26
+true
+```
+
+Thư mục đầu ra chứa `UplProgram.tac`, `UplProgram.j` và `UplProgram.class`.
+Bộ file mẫu được lưu trong `examples/phase2/` và chạy bằng
+`java -Xverify:all -cp examples/phase2 UplProgram`.
+
+Báo cáo dùng cùng bộ phông với báo cáo BTL01. Biên dịch bằng XeLaTeX với các
+phông TeX Gyre Pagella, TeX Gyre Heros và Latin Modern Mono:
+
+```bash
+xelatex -output-directory=build docs/main_part_2.tex
+```

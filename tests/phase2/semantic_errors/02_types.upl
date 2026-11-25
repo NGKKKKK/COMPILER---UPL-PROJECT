@@ -1,0 +1,14 @@
+begin
+  bool flag = 1;
+  int number = false;
+  number = true;
+  print(flag + 1);
+  print(1 * flag);
+  print(flag > false);
+  print(1 >= flag);
+  print(flag == 1);
+  if (1) then {}
+  do {} while (2);
+  for (int i = 0; 3; i = true) {}
+  print(missing + other);
+end
